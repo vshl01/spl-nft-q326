@@ -11,7 +11,7 @@ import path from "path";
 import wallet from "../../devnet-wallet.json";
 
 //chanege image path to your image path (relative to the project root)
-const IMAGE_FILE = "src/nft.png";
+const IMAGE_FILE = "src/images/doc.webp";
 
 //change the mime type to match your image
 const IMAGE_CONTENT_TYPE = "image/png";
