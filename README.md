@@ -105,20 +105,6 @@ Only `name` and `uri` are updatable on-chain. To change the image or attributes 
 
 ---
 
-## One thing worth knowing
-
-Explorer lists the mars token under the wallet, but **not** the Core NFT. Both are genuinely owned — the difference is indexing:
-
-| | SPL token | Core NFT |
-|---|---|---|
-| Ownership recorded in | a separate ATA (a PDA) | a field inside the asset account |
-| Accounts | mint + ATA | one |
-| Indexed by RPC | ✅ `getTokenAccountsByOwner` | ❌ needs a DAS indexer |
-
-`getTokenAccountsByOwner` is a dedicated, indexed RPC method that exists only for the Token program. There's no equivalent for Core, so wallet-page listings miss it.
-
----
-
 ## Scripts
 
 ```
