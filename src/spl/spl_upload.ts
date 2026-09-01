@@ -10,11 +10,11 @@ import path from "path";
 
 import wallet from "../../devnet-wallet.json";
 
-//chanege image path to your image path (relative to the project root)
-const IMAGE_FILE = "src/images/doc.webp";
+//change the image path to your mars image (relative to the project root)
+const IMAGE_FILE = "src/images/mars.jpg";
 
 //change the mime type to match your image
-const IMAGE_CONTENT_TYPE = "image/png";
+const IMAGE_CONTENT_TYPE = "image/jpeg";
 
 const umi = createUmi(
   process.env.SOLANA_RPC_URL ?? "https://api.devnet.solana.com",
@@ -44,10 +44,19 @@ umi.use(signerIdentity(signer));
       },
     );
 
-    const [myUri] = await umi.uploader.upload([file]);
-    console.log("Your image URI: ", myUri);
-    //  npm run nft:image             
-    // https://gateway.irys.xyz/8U57szopPBqohgZxVmRi5XbEzb1C3ngGwp4BNWh9anRz
+    const [imageUri] = await umi.uploader.upload([file]);
+    console.log("mars image uri   : ", imageUri);
+
+    //change the token metadata
+    const metadata = {
+      name: "mars",
+      symbol: "MARS",
+      description: "The mars token.",
+      image: imageUri,
+    };
+
+    const metadataUri = await umi.uploader.uploadJson(metadata);
+    console.log("mars metadata uri: ", metadataUri);
   } catch (error) {
     console.log(error);
   }
