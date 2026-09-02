@@ -1,10 +1,16 @@
 # spl-nft-q326
 
-Three things, all on Solana devnet, all done with scripts in this repo:
+**Week 1 Assignment (SPL and NFT)** — Q3 2026 Builders Cohort. Everything below ran on Solana devnet from the scripts in this repo.
 
-**①** launch a fungible SPL token and send it &nbsp;·&nbsp; **②** mint an NFT with MPL Core &nbsp;·&nbsp; **③** rename that NFT as its update authority
+| | Task | Status |
+|---|---|---|
+| 1 | Mint and transfer your own SPL token | ✅ **Done** |
+| 2 | Mint an NFT using MPL Core | ✅ **Done** |
+| 3 | Update the NFT's name and metadata as the update authority | ✅ **Done** |
+| 4 | *Extension* — transfer the NFT ownership between wallets | ✅ **Done** |
+| 5 | *Extension* — permanently destroy the NFT and reclaim rent | ✅ **Done** |
 
-Built with **@solana/kit** + **@solana-program/token** for raw transactions, **Metaplex UMI** for metadata, and **Irys** for storage.
+Both optional extensions included. Built with **@solana/kit** + **@solana-program/token** for raw transactions, **Metaplex UMI** for metadata, and **Irys** for storage.
 
 ---
 
@@ -82,6 +88,58 @@ Only `name` and `uri` are updatable on-chain. To change the image or attributes 
 
 ---
 
+## ④ Transfer ownership *(extension)*
+
+```bash
+npm run nft:transfer
+```
+
+Set `NEW_OWNER` in [`src/nft/nft_transfer.ts`](src/nft/nft_transfer.ts). The script verifies you're the current owner before sending — `transfer()` fails for anyone else.
+
+```
+before -> owner: vZS43eQouRHvdP7giineKUo9ePX1Emvv7vP9E4TkXCf
+after  -> owner: DRt3A3LgVzrTdC1ZrvL1ZotbfhaEKtM6yQFVvrtG5tuH
+signature 2YrvgxrJN9u9Nq79YgwvEq4axww9B1XjDHsDWoouoAWa3demM2EZRGvri8aMwGFYxvXDcuqFtAfXCYQAQ6goM6FE
+```
+
+> **Owner changed, update authority didn't.** After the transfer, `DRt3A3Lg…` owns DOOM but `vZS43eQo…` can still rename it. Core keeps the two roles separate — owning an asset doesn't mean controlling its metadata.
+
+---
+
+## ⑤ Burn and reclaim rent *(extension)*
+
+```bash
+npm run nft:burn
+```
+
+Set `ASSET_ADDRESS` in [`src/nft/nft_burn.ts`](src/nft/nft_burn.ts) — it's empty by default, since burning can't be undone. The script reads the account's rent, burns, then re-reads your balance to show what came back.
+
+A throwaway asset was minted for this so DOOM stayed intact as evidence for tasks ②–④:
+
+```
+burning -> name: VSHL01 , owner: vZS43eQouRHvdP7giineKUo9ePX1Emvv7vP9E4TkXCf
+before  -> wallet: 8.479267404 SOL
+rent held in the asset account: 0.003125769 SOL
+after   -> wallet: 8.480206021 SOL
+net change: 0.000938617 SOL (rent back, minus the tx fee)
+asset account still exists? true
+signature xN5H4cs2QafpZTzFBX3iQkc2bx1Kw2nPELf6vpEb91R6tUyWiowXsJgMazAxcQVQi82Qcf2UHbboGs9M3kbui8L
+```
+
+**The NFT is destroyed.** `fetchAsset` on that address now throws `UnexpectedAccountError` — no name, no uri, no owner.
+
+That last line is worth explaining, because Core's burn is not a plain account close. It shrinks the account to a **1-byte tombstone** rather than deleting it:
+
+| | Before burn | After burn |
+|---|---|---|
+| Data | full asset record (~150 bytes) | **1 byte, value `0`** (`Uninitialized`) |
+| Lamports held | 0.003125769 | 0.002182152 |
+| Readable as an asset | ✅ | ❌ `UnexpectedAccountError` |
+
+So `0.000938617 SOL` came back (0.000943617 left the account, 0.000005 of it the tx fee) and the rest stays with the tombstone. A 1-byte account still has to be rent-exempt — `0.000816957 SOL` at current rates — so some balance must remain by design. The reclaim is real but partial, and the address is permanently retired.
+
+---
+
 ## Receipts
 
 **SPL token — mars**
@@ -94,14 +152,26 @@ Only `name` and `uri` are updatable on-chain. To change the image or attributes 
 | Mint tx | `xNcxCb3BGoEnZXzeoZb7Y8WKiTwZQm296WwsLBjkD55wX8cSt947Nr8LtiJe7vdN7nNXEDEaUPZbiZ8yb249JEa` |
 | Transfer tx | `4RHffa2kzrHy78zKo9n9hjNs5VYxbUwQDfDUmvvppJgGhRF7Hj9BHSSB55DeXn6KVFN67RdezfZMgR91Gbt42qvF` |
 
-**NFT — Core asset**
+**NFT — Core asset (tasks ②③④)**
 
 | | |
 |---|---|
 | Asset | `DMw4uFZ8HEfdKgAHGzo3hr3JS9fXDW6NV1MmA6N3Cokn` |
 | Mint tx | `4hvfwd1pV13Xc33L58E64MbuwjGBMcXWtTDa8cotLeWgHjNQh8h875U29Wd1MGo8CzdyDEq2DPyFv7ztuwfU6S4a` |
 | Name | `VSHL01` → `DOOM` |
-| Owner / update authority | `vZS43eQouRHvdP7giineKUo9ePX1Emvv7vP9E4TkXCf` |
+| Update tx | `4hvfwd1p…` → renamed, uri replaced |
+| Transfer tx | `2YrvgxrJN9u9Nq79YgwvEq4axww9B1XjDHsDWoouoAWa3demM2EZRGvri8aMwGFYxvXDcuqFtAfXCYQAQ6goM6FE` |
+| Owner (after ④) | `DRt3A3LgVzrTdC1ZrvL1ZotbfhaEKtM6yQFVvrtG5tuH` |
+| Update authority | `vZS43eQouRHvdP7giineKUo9ePX1Emvv7vP9E4TkXCf` |
+
+**Burned asset (task ⑤)**
+
+| | |
+|---|---|
+| Asset | `9NkT2pj3ASEt9BaKtUGZbHCRVgmVBMC7jMCJiFUzKBsK` |
+| Mint tx | `5wHZp3sN4otzBEhgUiE3PsQCwKvgCujdhg1oyUNJR5xDr8RWATU6GrGgVsUoaKLEWUcdJRhPkfwBME7J2bN565Un` |
+| Burn tx | `xN5H4cs2QafpZTzFBX3iQkc2bx1Kw2nPELf6vpEb91R6tUyWiowXsJgMazAxcQVQi82Qcf2UHbboGs9M3kbui8L` |
+| Rent returned | `0.000938617 SOL` |
 
 ---
 
@@ -109,7 +179,7 @@ Only `name` and `uri` are updatable on-chain. To change the image or attributes 
 
 ```
 spl:upload    spl:init    spl:metadata    spl:mint    spl:transfer
-nft:image     nft:metadata    nft:mint    nft:update
+nft:image     nft:metadata    nft:mint    nft:update    nft:transfer    nft:burn
 ```
 
 Run each in order; paste the address or URI it logs into the next script.
