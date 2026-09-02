@@ -12,6 +12,26 @@
 
 Both optional extensions included. Built with **@solana/kit** + **@solana-program/token** for raw transactions, **Metaplex UMI** for metadata, and **Irys** for storage.
 
+## Tests
+
+```bash
+npm test
+```
+
+15 assertions, one group per task, run against **live devnet state** — not mocks. Built on Node's `node:test`, no extra dependencies.
+
+![all 15 tests passing](src/screenshots/test/assignment-test.png)
+
+What each group proves — see [`src/test/assignment.test.ts`](src/test/assignment.test.ts):
+
+| Task | Asserted |
+|---|---|
+| ① | 3 decimals · supply exactly 100.000 · metadata reads `mars`/`MARS` · uri serves JSON whose image resolves as `image/*` · recipient holds 1.000, sender 99.000 |
+| ② | account exists · owned by the Core program, not the Token program · no on-chain `symbol` field |
+| ③ | name is `DOOM` · uri resolves · update authority still my wallet |
+| ④ | owner is the recipient · owner ≠ minter · owner changed while update authority didn't |
+| ⑤ | `fetchAsset` rejects · account is 1 byte of value `0` · balance dropped but stays rent-exempt |
+
 ---
 
 ## Setup
@@ -112,7 +132,7 @@ signature 2YrvgxrJN9u9Nq79YgwvEq4axww9B1XjDHsDWoouoAWa3demM2EZRGvri8aMwGFYxvXDcu
 npm run nft:burn
 ```
 
-Set `ASSET_ADDRESS` in [`src/nft/nft_burn.ts`](src/nft/nft_burn.ts) — it's empty by default, since burning can't be undone. The script reads the account's rent, burns, then re-reads your balance to show what came back.
+Set `ASSET_ADDRESS` in [`src/nft/nft_burn.ts`](src/nft/nft_burn.ts)
 
 A throwaway asset was minted for this so DOOM stayed intact as evidence for tasks ②–④:
 
@@ -128,15 +148,11 @@ signature xN5H4cs2QafpZTzFBX3iQkc2bx1Kw2nPELf6vpEb91R6tUyWiowXsJgMazAxcQVQi82Qcf
 
 **The NFT is destroyed.** `fetchAsset` on that address now throws `UnexpectedAccountError` — no name, no uri, no owner.
 
-That last line is worth explaining, because Core's burn is not a plain account close. It shrinks the account to a **1-byte tombstone** rather than deleting it:
-
 | | Before burn | After burn |
 |---|---|---|
 | Data | full asset record (~150 bytes) | **1 byte, value `0`** (`Uninitialized`) |
 | Lamports held | 0.003125769 | 0.002182152 |
 | Readable as an asset | ✅ | ❌ `UnexpectedAccountError` |
-
-So `0.000938617 SOL` came back (0.000943617 left the account, 0.000005 of it the tx fee) and the rest stays with the tombstone. A 1-byte account still has to be rent-exempt — `0.000816957 SOL` at current rates — so some balance must remain by design. The reclaim is real but partial, and the address is permanently retired.
 
 ---
 

@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npx ts-node src/test/assignment.test.ts",
     "spl:init": "npx ts-node src/spl/spl_init.ts",
     "spl:upload": "npx ts-node src/spl/spl_upload.ts",
     "spl:metadata": "npx ts-node src/spl/spl_metadata.ts",
